@@ -1,4 +1,4 @@
-obj-m = hello.o
+obj-m = lfprng.o
 KVERSION = '2.6.24.6'
 all:
 	make -C /lib/modules/$(KVERSION)/build M=$(PWD) modules
