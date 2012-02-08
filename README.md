@@ -6,11 +6,17 @@ Leap Frog random number generator kernel module!
 Install Module
 --------------
 
+On factor-3210:
+
     make
+    scp lfprng.ko factor007:~
+
+On factor007
+
     sudo su
-    insmod hello.ko
+    insmod lfprng.ko
 
 Remove Module
 -------------
 
-    rmmod hello
+    rmmod lfprng
