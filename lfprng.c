@@ -2,6 +2,8 @@
 #include <linux/module.h>
 #include <linux/proc_fs.h>
 
+#define MODULE_NAME "Leap Frog Psuedo Random Number Generator"
+
 int init_module(void)
 {
   struct proc_dir_entry* proc_file;
