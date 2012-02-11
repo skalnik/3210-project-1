@@ -27,7 +27,7 @@ int read_proc_lfprng(char *buffer,
                      int buffer_length,
                      int *eof,
                      void* data) {
-  printk("PID is:%ld", (long)current->pid);
+  printk("/proc/lfprng was accessed!\nProcess ID:%ld\n", (long)current->pid);
   return 0;
 }
 /*writes LFprn into /proc/lfprng*/
