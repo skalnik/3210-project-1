@@ -43,7 +43,20 @@ void calculate_lfprng(void* thread_seed)
 {
   struct thread_data *my_seed;
   my_seed = (struct thread_data *) thread_seed;
-  printk("this is a thread %i",my_seed->a);
+
+  while(1)
+  {
+  
+    if(kthread_should_stop())
+    {
+      break;
+    }
+    else
+    {
+      printk("this is a thread %i",my_seed->a);
+    }
+ 
+  }
 }
 
 /*spawns worker threads*/
@@ -51,9 +64,10 @@ void create_lfprng(int seed, pid_t pid)
 {
   /*t = pid -> threadCount*/
   int t = 1;
+  int output_size = 256;
   int seed_array[t];
   struct task_struct *ts;
-
+  int lfprn_array[output_size];
   int i = 0;
    /*not real values*/
   int a = 2; 
@@ -82,13 +96,12 @@ void create_lfprng(int seed, pid_t pid)
       printk("kthread_run");
     } 
   }
-    
-  // Wait for the child thread to exit
-    pid = sys_waitpid(pid, 0, 0);
-
-    if (pid == -1) {
-      printk("waitpid");
-    } 
+  for(i=0;i<output_size;i++)
+  {
+    lfprn_array[i] = array[i%t].seed;
+  }
+  kthread_stop(ts);
+  
 }
 
 
