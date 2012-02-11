@@ -9,11 +9,10 @@
 #include <linux/sys.h>
 #include <linux/signal.h>
 
-
-
 #define MODULE_NAME "Leap Frog Psuedo Random Number Generator"
 #define STACK 1024*64
 
+extern struct task_struct *find_task_by_pid(pid_t nr);
 static struct proc_dir_entry *proc_file;
 
 struct thread_data{
@@ -28,18 +27,15 @@ int read_proc_lfprng(char *buffer,
                      int *eof,
                      void* data) {
   unsigned int thread_count = 0;
-  struct task_struct *g, *p;
+  struct task_struct *task;
+  atomic_t signal_count;
   pid_t current_pid = current->pid;
   printk("/proc/lfprng was accessed!\nProcess ID:%ld\n", (long)current_pid);
 
+  task = find_task_by_pid(current_pid);
+  signal_count = task->signal->count;
+  thread_count = atomic_read(&signal_count);
 
-  do_each_thread(g, p)
-  {
-    if(p->pid == current_pid)
-    {
-      thread_count++;
-    }
-  } while_each_thread(g, p);
   printk("Process has %i threads\n", thread_count);
 
   return 0;
