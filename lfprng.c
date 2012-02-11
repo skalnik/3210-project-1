@@ -8,12 +8,17 @@
 #include <linux/syscalls.h>
 #include <linux/sys.h>
 #include <linux/signal.h>
+#include <asm/uaccess.h>
 
 #define MODULE_NAME "Leap Frog Psuedo Random Number Generator"
 #define STACK 1024*64
+#define SEED_BUFFER_MAX 512
 
 extern struct task_struct *find_task_by_pid(pid_t nr);
 static struct proc_dir_entry *proc_file;
+static unsigned int seed_buffer_size = 0;
+static char seed_buffer[SEED_BUFFER_MAX];
+int user_seed;
 
 struct thread_data{
   int seed,i,a,b,c;
@@ -40,12 +45,24 @@ int read_proc_lfprng(char *buffer,
 
   return 0;
 }
-/*writes LFprn into /proc/lfprng*/
-int write_proc_lfprng(float psn)
+
+
+/* Called when someone attempts to write a seed to /proc/lfprng */
+int write_proc_lfprng(struct file *file, const char __user *buffer, unsigned long count, void *data)
 {
-  /*stub*/
-  printk("Out: %f", psn);
-  return 0;
+  char **endp;
+  seed_buffer_size = count;
+  if(seed_buffer_size > SEED_BUFFER_MAX)
+  {
+    seed_buffer_size = SEED_BUFFER_MAX;
+  }
+
+  copy_from_user(seed_buffer, buffer, seed_buffer_size);
+
+  user_seed = simple_strtol(seed_buffer, endp, 10);
+  printk("Seed: %i\n", user_seed);
+
+  return seed_buffer_size;
 }
 
  /*worker thread function*/
@@ -119,10 +136,11 @@ void create_lfprng(int seed, pid_t pid)
 
 int init_module(void)
 {
-  proc_file = create_proc_entry("lfprng", 0755, NULL);
+  proc_file = create_proc_entry("lfprng", 0766, NULL);
 
   proc_file->owner = THIS_MODULE;
   proc_file->read_proc = read_proc_lfprng;
+  proc_file->write_proc = write_proc_lfprng;
 
   return 0;
 }
