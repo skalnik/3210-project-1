@@ -27,7 +27,21 @@ int read_proc_lfprng(char *buffer,
                      int buffer_length,
                      int *eof,
                      void* data) {
-  printk("/proc/lfprng was accessed!\nProcess ID:%ld\n", (long)current->pid);
+  unsigned int thread_count = 0;
+  struct task_struct *g, *p;
+  pid_t current_pid = current->pid;
+  printk("/proc/lfprng was accessed!\nProcess ID:%ld\n", (long)current_pid);
+
+
+  do_each_thread(g, p)
+  {
+    if(p->pid == current_pid)
+    {
+      thread_count++;
+    }
+  } while_each_thread(g, p);
+  printk("Process has %i threads\n", thread_count);
+
   return 0;
 }
 /*writes LFprn into /proc/lfprng*/
