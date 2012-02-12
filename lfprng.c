@@ -130,9 +130,8 @@ void create_lfprng(int seed, pid_t pid)
   int b = 0;
   int c = 8;
   struct thread_data* input;
-  struct task_struct *ts = find_task_by_pid(pid);
-  atomic_t signal_count = ts->signal->count;
-  int t = atomic_read(&signal_count);
+  struct task_struct *ts;
+  int t = thread_count;
   int seed_array[t];
   struct thread_data array[t]; 
 
