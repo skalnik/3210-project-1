@@ -11,7 +11,7 @@
 #include <asm/uaccess.h>
 
 #define MODULE_NAME "Leap Frog Psuedo Random Number Generator"
-#define STACK 1024*64
+
 #define SEED_BUFFER_MAX 512
 
 extern struct task_struct *find_task_by_pid(pid_t nr);
@@ -21,7 +21,7 @@ static char seed_buffer[SEED_BUFFER_MAX];
 int user_seed;
 
 struct thread_data{
-  int seed,i,a,b,c;
+  int seed,i,a,b,c,t;
 };
 
 /* Called when someone attempts to read a psuedo random number /proc/lfprng */
@@ -68,12 +68,25 @@ int write_proc_lfprng(struct file *file, const char __user *buffer, unsigned lon
  /*worker thread function*/
 void calculate_lfprng(void* thread_seed)
 {
+  int out_size = 128;
   struct thread_data *my_seed;
+  int i = 1;
+  int out_array[out_size];
+   
   my_seed = (struct thread_data *) thread_seed;
+  out_array[0] = my_seed->seed;
 
   while(1)
   {
-  
+    
+    out_array[i%out_size] = ( ( (my_seed->a ^ my_seed->t) * 
+			      out_array[i-1]) % my_seed->c);
+    
+    if (my_seed->seed == -1)
+    {
+      my_seed -> seed = out_array[i%out_size];
+      out_array[i%out_size] = -1;
+    }
     if(kthread_should_stop())
     {
       break;
@@ -82,27 +95,28 @@ void calculate_lfprng(void* thread_seed)
     {
       printk("this is a thread %i",my_seed->a);
     }
- 
+    i++;
   }
 }
 
 /*spawns worker threads*/
 void create_lfprng(int seed, pid_t pid)
 {
-  /*t = pid -> threadCount*/
-  int t = 1;
   int output_size = 256;
-  int seed_array[t];
-  struct task_struct *ts;
   int lfprn_array[output_size];
   int i = 0;
    /*not real values*/
   int a = 2; 
   int b = 0;
   int c = 8;
+  struct thread_data* input;
+  struct task_struct *ts = find_task_by_pid(pid);
+  atomic_t signal_count = ts->signal->count;
+  int t = atomic_read(&signal_count);
+  int seed_array[t];
   struct thread_data array[t]; 
-  struct thread_data* input;  
-  for (i= 0; i < t; i++)
+
+ for (i= 0; i < t; i++)
   {
     seed_array[i] = (seed * (( a^i ) % c));
   }
@@ -115,17 +129,18 @@ void create_lfprng(int seed, pid_t pid)
     array[i].a = a;
     array[i].b = b;
     array[i].c = c;
+    array[i].t = t;
     input = &array[i];
     ts = kthread_run(calculate_lfprng, (void*) input, "caclfprn"); 
- 
-    if (pid == -1)
-    {
-      printk("kthread_run");
-    } 
   }
   for(i=0;i<output_size;i++)
   {
+    while(array[i%t].seed = -1)
+    {
+      continue;
+    }
     lfprn_array[i] = array[i%t].seed;
+    array[i%t].seed = -1;
   }
   kthread_stop(ts);
   
