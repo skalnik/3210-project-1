@@ -36,7 +36,7 @@ int read_proc_lfprng(char *buffer,
                      void* data) {
   int ret;
 
-  if(thread_count <= 0)
+  if(thread_count == -1)
   {
     struct task_struct *task;
     atomic_t signal_count;
