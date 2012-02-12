@@ -16,6 +16,9 @@
 
 extern struct task_struct *find_task_by_pid(pid_t nr);
 static struct proc_dir_entry *proc_file;
+static unsigned int thread_count = -1;
+static int rngs[5] = {1, 2, 3, 4, 5};
+static int *rngs_ptr = rngs;
 static unsigned int seed_buffer_size = 0;
 static char seed_buffer[SEED_BUFFER_MAX];
 int user_seed;
@@ -31,19 +34,36 @@ int read_proc_lfprng(char *buffer,
                      int buffer_length,
                      int *eof,
                      void* data) {
-  unsigned int thread_count = 0;
-  struct task_struct *task;
-  atomic_t signal_count;
-  pid_t current_pid = current->pid;
-  printk("/proc/lfprng was accessed!\nProcess ID:%ld\n", (long)current_pid);
+  int ret;
 
-  task = find_task_by_pid(current_pid);
-  signal_count = task->signal->count;
-  thread_count = atomic_read(&signal_count);
+  if(thread_count == -1)
+  {
+    struct task_struct *task;
+    atomic_t signal_count;
 
-  printk("Process has %i threads\n", thread_count);
+    pid_t current_pid = current->pid;
+    printk("/proc/lfprng was accessed!\nProcess ID:%ld\n", (long)current_pid);
 
-  return 0;
+    task = find_task_by_pid(current_pid);
+    signal_count = task->signal->count;
+    thread_count = atomic_read(&signal_count);
+    printk("Process has %i threads\n", thread_count);
+
+    /* Generate Numbers */
+  }
+
+  if(offset > 0)
+  {
+    *eof = 1;
+    ret = 0;
+  }
+  else
+  {
+    ret = sprintf(buffer, "%d", *rngs_ptr);
+    rngs_ptr++;
+  }
+
+  return ret;
 }
 
 
